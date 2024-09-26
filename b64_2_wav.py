@@ -31,12 +31,10 @@ def decode_b64_to_wav(b64_data):
         messagebox.showerror("Erreur", f"Erreur lors de la conversion du fichier : {e}")
         return None
 
-def process_audio(audio_io):
-    global audio_data, fs, audio_duration, current_position, data_dtype
+def process_audio(fs, audio_data):
+    global audio_duration, current_position, data_dtype
     
     try:
-        # Lire les données audio directement en utilisant scipy.io.wavfile.read
-        fs, audio_data = wavfile.read(audio_io)
         data_dtype = audio_data.dtype
         audio_duration = len(audio_data) / fs  # Durée totale de l'audio en secondes
         current_position = 0  # Réinitialiser la position de la lecture
@@ -102,19 +100,25 @@ def save_audio():
         messagebox.showwarning("Avertissement", "Aucun fichier audio à sauvegarder.")
 
 def select_file():
-    global file_name
-    file_path = filedialog.askopenfilename(title="Sélectionner un fichier b64", filetypes=[("Text Files", "*.txt")])
+    global file_name, audio_data, fs
+    file_path = filedialog.askopenfilename(title="Sélectionner un fichier", filetypes=[("Audio Files", "*.txt *.wav")])
     if not file_path:
         return
 
-    with open(file_path, "r") as file:
-        b64_data = file.read()
+    file_name = os.path.basename(file_path)
+    
+    if file_path.endswith(".txt"):
+        with open(file_path, "r") as file:
+            b64_data = file.read()
+        audio_io = decode_b64_to_wav(b64_data)
+        if audio_io:
+            fs, audio_data = wavfile.read(audio_io)
+            process_audio(fs, audio_data)
+    elif file_path.endswith(".wav"):
+        fs, audio_data = wavfile.read(file_path)
+        process_audio(fs, audio_data)
 
-    audio_io = decode_b64_to_wav(b64_data)
-    if audio_io:
-        process_audio(audio_io)
-        file_name = os.path.basename(file_path)
-        file_label.config(text=f"Fichier chargé : {file_name}")
+    file_label.config(text=f"Fichier chargé : {file_name}")
 
 # Interface graphique améliorée
 root = tk.Tk()
